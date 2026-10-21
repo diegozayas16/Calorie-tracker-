@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Calorie Tracker</h1>
+    <div class="date-nav">
+      <button id="prevDay" class="icon-btn" aria-label="Previous day">&#8592;</button>
+      <span id="currentDate"></span>
+      <button id="nextDay" class="icon-btn" aria-label="Next day">&#8594;</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Daily summary -->
+    <section class="card summary">
+      <h2>Today's Summary</h2>
+      <div class="calorie-ring">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-bg" cx="60" cy="60" r="52" />
+          <circle id="ringProgress" class="ring-progress" cx="60" cy="60" r="52" />
+        </svg>
+        <div class="ring-text">
+          <span id="caloriesConsumed" class="big-number">0</span>
+          <span class="muted">of <span id="calorieGoalText">2000</span> kcal</span>
+          <span id="caloriesRemaining" class="remaining">2000 left</span>
+        </div>
+      </div>
+
+      <div class="macros">
+        <div class="macro" data-macro="protein">
+          <div class="macro-label"><span>Protein</span><span id="proteinText">0 / 150 g</span></div>
+          <div class="bar"><div id="proteinBar" class="bar-fill protein"></div></div>
+        </div>
+        <div class="macro" data-macro="carbs">
+          <div class="macro-label"><span>Carbs</span><span id="carbsText">0 / 250 g</span></div>
+          <div class="bar"><div id="carbsBar" class="bar-fill carbs"></div></div>
+        </div>
+        <div class="macro" data-macro="fat">
+          <div class="macro-label"><span>Fat</span><span id="fatText">0 / 65 g</span></div>
+          <div class="bar"><div id="fatBar" class="bar-fill fat"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Add food -->
+    <section class="card">
+      <h2>Add Food</h2>
+      <form id="foodForm" autocomplete="off">
+        <label class="full">
+          Food name
+          <input type="text" id="foodName" placeholder="e.g. Chicken breast" required />
+        </label>
+        <label>
+          Meal
+          <select id="mealType">
+            <option>Breakfast</option>
+            <option>Lunch</option>
+            <option>Dinner</option>
+            <option>Snack</option>
+          </select>
+        </label>
+        <label>
+          Calories (kcal)
+          <input type="number" id="calories" min="0" step="1" placeholder="0" required />
+        </label>
+        <label>
+          Protein (g)
+          <input type="number" id="protein" min="0" step="0.1" placeholder="0" />
+        </label>
+        <label>
+          Carbs (g)
+          <input type="number" id="carbs" min="0" step="0.1" placeholder="0" />
+        </label>
+        <label>
+          Fat (g)
+          <input type="number" id="fat" min="0" step="0.1" placeholder="0" />
+        </label>
+        <button type="button" id="estimateBtn" class="link-btn full">
+          Fill calories from macros (4/4/9 kcal per g)
+        </button>
+        <button type="submit" class="primary-btn full">Add Entry</button>
+      </form>
+    </section>
+
+    <!-- Food log -->
+    <section class="card log">
+      <div class="log-header">
+        <h2>Food Log</h2>
+        <button id="clearDay" class="link-btn danger">Clear day</button>
+      </div>
+      <div id="foodLog"></div>
+      <p id="emptyMsg" class="muted empty">No entries yet. Add something you ate above.</p>
+    </section>
+
+    <!-- Goals -->
+    <section class="card">
+      <h2>Daily Goals</h2>
+      <form id="goalsForm">
+        <label>
+          Calories (kcal)
+          <input type="number" id="goalCalories" min="0" required />
+        </label>
+        <label>
+          Protein (g)
+          <input type="number" id="goalProtein" min="0" required />
+        </label>
+        <label>
+          Carbs (g)
+          <input type="number" id="goalCarbs" min="0" required />
+        </label>
+        <label>
+          Fat (g)
+          <input type="number" id="goalFat" min="0" required />
+        </label>
+        <button type="submit" class="primary-btn full">Save Goals</button>
+      </form>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

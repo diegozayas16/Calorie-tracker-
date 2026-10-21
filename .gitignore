@@ -1,0 +1,37 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+credentials.json
+config.local.*
+*api_key*
+*apikey*
+*secret*
+
+# Dependencies
+node_modules/
+bower_components/
+vendor/
+jspm_packages/
+
+# Logs and caches
+*.log
+npm-debug.log*
+.cache/
+
+# Build output
+dist/
+build/
+
+# Editor / OS / tooling
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db
+desktop.ini
