@@ -227,6 +227,8 @@ select {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.55rem 0.7rem;
+  width: 100%;
+  min-width: 0; /* let inputs shrink to their grid column instead of overflowing the card */
 }
 
 input:focus,
@@ -272,6 +274,98 @@ select:focus {
 .link-btn.danger.confirming {
   font-weight: 700;
   text-decoration: underline;
+}
+
+/* Food search */
+.search-form {
+  margin-bottom: 0.75rem;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-row .primary-btn {
+  padding: 0.55rem 1rem;
+}
+
+.search-status {
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.search-results {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.search-results li + li {
+  border-top: 1px solid var(--border);
+}
+
+.result-btn {
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+}
+
+.result-btn:hover,
+.result-btn:focus-visible {
+  background: var(--bg);
+}
+
+.result-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.result-meta {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.serving-panel {
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.serving-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.serving-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.serving-note {
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0;
 }
 
 /* Food log */
