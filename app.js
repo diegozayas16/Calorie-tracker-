@@ -193,6 +193,165 @@ function changeDay(offset) {
   render();
 }
 
+// ---------- Food search (USDA FoodData Central) ----------
+const GRAMS_PER_OZ = 28.3495;
+const LIQUID_WORDS =
+  /\b(milk|juice|drinks?|beverages?|soda|cola|water|coffee|tea|smoothies?|shakes?|broth|soup|wine|beer|lemonade|kombucha|kefir|nectar)\b/i;
+// USDA nutrient ids; the first one found in each list is used
+const NUTRIENTS = {
+  calories: [1008, 2047, 2048],
+  protein: [1003],
+  carbs: [1005, 1050],
+  fat: [1004, 1085],
+};
+
+let selectedFood = null;
+
+function nutrientValue(food, ids) {
+  for (const id of ids) {
+    const n = food.foodNutrients.find((x) => x.nutrientId === id);
+    if (n && Number.isFinite(n.value)) return n.value;
+  }
+  return null;
+}
+
+// Turn a USDA search result into values per 100 g (or per 100 ml for drinks sold by volume)
+function normalizeFood(food) {
+  food.foodNutrients = food.foodNutrients || [];
+  const unit = String(food.servingSizeUnit || "").toLowerCase();
+  const perMl = food.dataType === "Branded" && (unit === "ml" || unit === "mlt");
+  const protein = nutrientValue(food, NUTRIENTS.protein) || 0;
+  const carbs = nutrientValue(food, NUTRIENTS.carbs) || 0;
+  const fat = nutrientValue(food, NUTRIENTS.fat) || 0;
+  let calories = nutrientValue(food, NUTRIENTS.calories);
+  if (calories === null) calories = protein * 4 + carbs * 4 + fat * 9;
+  const serving = num(food.servingSize);
+
+  return {
+    name: food.description || "Unknown food",
+    brand: food.brandName || food.brandOwner || "",
+    baseUnit: perMl ? "ml" : "g",
+    liquid: perMl || LIQUID_WORDS.test(food.description || ""),
+    per100: { calories, protein, carbs, fat },
+    // Branded foods list their label serving; everything else starts at 100
+    serving: serving > 0 && (unit === "g" || unit === "grm" || perMl) ? serving : 100,
+    household: food.householdServingFullText || "",
+  };
+}
+
+async function fetchFoods(query) {
+  const res = await fetch(`/api/food-search?q=${encodeURIComponent(query)}`);
+  // No /api when the folder is served with a plain static server: call USDA directly with
+  // the public demo key (local testing only; the live site goes through /api)
+  if (res.status === 404 && ["localhost", "127.0.0.1"].includes(location.hostname)) {
+    const direct = await fetch(
+      `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&pageSize=25&query=${encodeURIComponent(query)}`
+    );
+    if (!direct.ok) throw new Error(direct.status === 429 ? "Too many searches right now, try again later" : "Search failed");
+    return (await direct.json()).foods || [];
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Search failed");
+  return data.foods || [];
+}
+
+function setSearchStatus(message) {
+  $("searchStatus").textContent = message;
+  $("searchStatus").hidden = !message;
+}
+
+function renderResults(foods) {
+  const list = $("searchResults");
+  list.innerHTML = "";
+  list.hidden = foods.length === 0;
+  for (const food of foods) {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "result-btn";
+    const name = document.createElement("span");
+    name.className = "result-name";
+    name.textContent = food.name;
+    const meta = document.createElement("span");
+    meta.className = "result-meta";
+    meta.textContent = `${food.brand || "Generic"} · ${Math.round(food.per100.calories)} kcal per 100 ${food.baseUnit}`;
+    btn.append(name, meta);
+    btn.addEventListener("click", () => selectFood(food));
+    li.appendChild(btn);
+    list.appendChild(li);
+  }
+}
+
+function selectFood(food) {
+  selectedFood = food;
+  $("searchResults").hidden = true;
+  setSearchStatus("");
+  $("servingName").textContent = food.brand ? `${food.name} (${food.brand})` : food.name;
+
+  const units = food.liquid ? ["g", "oz", "ml"] : ["g", "oz"];
+  const select = $("servingUnit");
+  select.innerHTML = "";
+  for (const u of units) select.add(new Option(u, u));
+  select.value = food.baseUnit;
+  $("servingAmount").value = round(food.serving);
+  $("servingPanel").hidden = false;
+  applyServing();
+  $("servingAmount").focus();
+}
+
+// Scale the per-100 values to the chosen amount and fill in the Add Food form
+function applyServing() {
+  if (!selectedFood) return;
+  const amount = num($("servingAmount").value);
+  const unit = $("servingUnit").value;
+  const base = unit === "oz" ? amount * GRAMS_PER_OZ : amount; // g and ml treated as 1:1
+  const factor = base / 100;
+  const v = selectedFood.per100;
+
+  $("foodName").value = `${selectedFood.name} (${round(amount)} ${unit})`;
+  $("calories").value = Math.round(v.calories * factor);
+  $("protein").value = round(v.protein * factor);
+  $("carbs").value = round(v.carbs * factor);
+  $("fat").value = round(v.fat * factor);
+
+  const notes = [];
+  if (selectedFood.household) notes.push(`Label serving: ${selectedFood.household} (${round(selectedFood.serving)} ${selectedFood.baseUnit})`);
+  const mixesUnits = (unit === "ml") !== (selectedFood.baseUnit === "ml");
+  if (mixesUnits) notes.push("Converted assuming 1 ml ≈ 1 g, so it's approximate.");
+  $("servingNote").textContent = notes.join(" ");
+  $("servingNote").hidden = notes.length === 0;
+}
+
+function clearSelection() {
+  selectedFood = null;
+  $("servingPanel").hidden = true;
+}
+
+$("searchForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const query = $("searchInput").value.trim();
+  if (query.length < 2) {
+    setSearchStatus("Type at least 2 characters.");
+    return;
+  }
+  setSearchStatus("Searching…");
+  $("searchResults").hidden = true;
+  try {
+    const foods = (await fetchFoods(query)).map(normalizeFood);
+    // Generic USDA foods first, then branded products
+    foods.sort((a, b) => (a.brand ? 1 : 0) - (b.brand ? 1 : 0));
+    renderResults(foods);
+    setSearchStatus(foods.length ? "Pick a food to fill in its calories and macros." : "No foods found.");
+  } catch (e) {
+    renderResults([]);
+    setSearchStatus(e.message === "Failed to fetch" ? "Search failed — check your connection." : e.message);
+  }
+});
+
+$("servingAmount").addEventListener("input", applyServing);
+$("servingUnit").addEventListener("change", applyServing);
+$("servingClear").addEventListener("click", clearSelection);
+
 // ---------- Event listeners ----------
 $("foodForm").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -212,6 +371,7 @@ $("foodForm").addEventListener("submit", (event) => {
   const meal = $("mealType").value;
   event.target.reset();
   $("mealType").value = meal; // keep the selected meal for quick repeat entries
+  clearSelection();
   $("foodName").focus();
   showToast(`Added ${name}`);
 });

@@ -51,6 +51,36 @@
     <!-- Add food -->
     <section class="card">
       <h2>Add Food</h2>
+      <form id="searchForm" class="search-form" autocomplete="off" role="search">
+        <label class="full">
+          Search foods (USDA database)
+          <span class="search-row">
+            <input type="search" id="searchInput" placeholder="e.g. banana, whole milk" minlength="2" maxlength="100" />
+            <button type="submit" class="primary-btn">Search</button>
+          </span>
+        </label>
+      </form>
+      <p id="searchStatus" class="muted search-status" hidden></p>
+      <ul id="searchResults" class="search-results" hidden></ul>
+
+      <div id="servingPanel" class="serving-panel" hidden>
+        <div class="serving-header">
+          <strong id="servingName"></strong>
+          <button type="button" id="servingClear" class="link-btn">Clear</button>
+        </div>
+        <div class="serving-row">
+          <label>
+            Amount
+            <input type="number" id="servingAmount" min="0" step="any" />
+          </label>
+          <label>
+            Unit
+            <select id="servingUnit"></select>
+          </label>
+        </div>
+        <p id="servingNote" class="muted serving-note"></p>
+      </div>
+
       <form id="foodForm" autocomplete="off">
         <label class="full">
           Food name
