@@ -33,6 +33,9 @@ GitHub: https://github.com/diegozayas16/Calorie-tracker- (branch `main`). Live o
 
 ## Food search (USDA FoodData Central)
 
+- Search runs as you type: after a 350 ms pause (`SEARCH_DELAY_MS`) once there are at least
+  2 characters, or right away on Enter / the Search button. Results are kept in `searchCache`
+  for the page session, and `searchSeq` drops responses from older searches that arrive late.
 - The search box in Add Food calls `GET /api/food-search?q=...`. That Vercel function
   POSTs to `https://api.nal.usda.gov/fdc/v1/foods/search` (data types Foundation, SR Legacy,
   Survey (FNDDS), Branded; 25 results), strips the response down to the fields the app uses
@@ -92,6 +95,7 @@ same server set up for the Claude browser preview.
 6. Added USDA food search with serving sizes in g / oz / ml that autofills calories and macros,
    through the `api/food-search.js` Vercel function. Also fixed form inputs overflowing their
    card on wider screens (`width: 100%; min-width: 0` on inputs and selects).
+7. Made food search show results while typing instead of only on Enter.
 
 ## To do / blocked
 

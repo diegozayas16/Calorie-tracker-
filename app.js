@@ -327,25 +327,56 @@ function clearSelection() {
   $("servingPanel").hidden = true;
 }
 
-$("searchForm").addEventListener("submit", async (event) => {
+const SEARCH_DELAY_MS = 350; // wait for a pause in typing so every keystroke isn't a request
+const searchCache = new Map();
+let searchTimer;
+let searchSeq = 0;
+
+async function runSearch(query) {
+  const seq = ++searchSeq;
+  const key = query.toLowerCase();
+  setSearchStatus("Searching…");
+  try {
+    let foods = searchCache.get(key);
+    if (!foods) {
+      foods = (await fetchFoods(query)).map(normalizeFood);
+      // Generic USDA foods first, then branded products
+      foods.sort((a, b) => (a.brand ? 1 : 0) - (b.brand ? 1 : 0));
+      searchCache.set(key, foods);
+    }
+    if (seq !== searchSeq) return; // a newer search started while this one was loading
+    renderResults(foods);
+    setSearchStatus(foods.length ? "Pick a food to fill in its calories and macros." : "No foods found.");
+  } catch (e) {
+    if (seq !== searchSeq) return;
+    renderResults([]);
+    setSearchStatus(e.message === "Failed to fetch" ? "Search failed — check your connection." : e.message);
+  }
+}
+
+// Search as the user types
+$("searchInput").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  const query = $("searchInput").value.trim();
+  if (query.length < 2) {
+    searchSeq++; // ignore any search still loading
+    renderResults([]);
+    setSearchStatus("");
+    return;
+  }
+  searchTimer = setTimeout(() => runSearch(query), SEARCH_DELAY_MS);
+});
+
+// Enter or the Search button searches right away
+$("searchForm").addEventListener("submit", (event) => {
   event.preventDefault();
+  clearTimeout(searchTimer);
   const query = $("searchInput").value.trim();
   if (query.length < 2) {
     setSearchStatus("Type at least 2 characters.");
     return;
   }
-  setSearchStatus("Searching…");
-  $("searchResults").hidden = true;
-  try {
-    const foods = (await fetchFoods(query)).map(normalizeFood);
-    // Generic USDA foods first, then branded products
-    foods.sort((a, b) => (a.brand ? 1 : 0) - (b.brand ? 1 : 0));
-    renderResults(foods);
-    setSearchStatus(foods.length ? "Pick a food to fill in its calories and macros." : "No foods found.");
-  } catch (e) {
-    renderResults([]);
-    setSearchStatus(e.message === "Failed to fetch" ? "Search failed — check your connection." : e.message);
-  }
+  runSearch(query);
 });
 
 $("servingAmount").addEventListener("input", applyServing);
